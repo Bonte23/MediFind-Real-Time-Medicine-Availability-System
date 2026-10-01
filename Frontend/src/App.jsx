@@ -7,7 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 
 // Common Components
-import Navbar from './Components/Navbar';
+import Navbar from './Components/NavBar';
 import Footer from './Components/Footer';
 import ProtectedRoute from './Components/ProtectedRoute';
 
