@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const inventoryController = require('../controllers/inventoryController');
+const inventoryController = require('../Controllers/inventoryController');
 const { authenticate, authorize } = require('../middleware/auth');
 
 router.get('/my-inventory', authenticate, authorize('pharmacist'), inventoryController.getMyInventory);

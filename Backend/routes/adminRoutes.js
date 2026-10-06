@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController');
+const adminController = require('../Controllers/adminController');
 const { authenticate, authorize } = require('../middleware/auth');
 
 router.get('/dashboard', authenticate, authorize('admin'), adminController.getDashboardStats);

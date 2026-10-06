@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const reservationController = require('../controllers/reservationController');
+const reservationController = require('../Controllers/reservationController');
 const { authenticate } = require('../middleware/auth');
 
 router.post('/', authenticate, reservationController.createReservation);
