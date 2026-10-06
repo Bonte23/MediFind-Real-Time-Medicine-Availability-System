@@ -22,18 +22,47 @@ const reportRoutes = require('./routes/reportRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security & Middleware
+// CORS — in production, restrict to the configured frontend URL;
+// in development/test, allow localhost on any port for convenience.
+const allowedOrigins = (() => {
+  if (process.env.NODE_ENV === 'production') {
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      console.warn('[CORS] WARNING: FRONTEND_URL is not set. CORS will block all browser requests in production.');
+      return [];
+    }
+    // Support a comma-separated list of origins if needed (e.g. www + apex)
+    return frontendUrl.split(',').map(u => u.trim());
+  }
+  // Development: allow localhost on common frontend ports
+  return [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:8080'
+  ];
+})();
+
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, mobile apps, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: Origin "${origin}" is not allowed.`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Morgan HTTP request logging:
+// - 'combined' in production (Apache-style, no color, machine-friendly for log aggregators)
+// - 'dev'      in development (concise, color-coded for readability)
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('dev'));
+  app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 }
 
 // Serve uploaded prescription files
@@ -93,11 +122,20 @@ async function startServer() {
   try {
     await initializeDatabase();
     if (process.env.NODE_ENV !== 'test') {
-      app.listen(PORT, () => {
+      // Bind to 0.0.0.0 so Render's reverse proxy (and Docker) can reach the server.
+      // Listening on 127.0.0.1 (the Node default) is only reachable from loopback.
+      app.listen(PORT, '0.0.0.0', () => {
+        const env = process.env.NODE_ENV || 'development';
         console.log(`=======================================================`);
-        console.log(` MediFind Backend Server running on http://localhost:${PORT}`);
-        console.log(` API Base URL: http://localhost:${PORT}/api`);
-        console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
+        if (env === 'production') {
+          console.log(` MediFind Backend running on port ${PORT} (0.0.0.0)`);
+          console.log(` Environment: production`);
+          console.log(` API Base URL: /api`);
+        } else {
+          console.log(` MediFind Backend Server running on http://localhost:${PORT}`);
+          console.log(` API Base URL: http://localhost:${PORT}/api`);
+          console.log(` Environment: ${env}`);
+        }
         console.log(`=======================================================`);
       });
     }

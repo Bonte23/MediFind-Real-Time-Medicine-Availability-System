@@ -51,9 +51,18 @@ async function initializeDatabase() {
     dbType = 'mysql';
     console.log(`[DATABASE] Connected successfully to MySQL database "${dbName}".`);
   } catch (err) {
+    // In production, a MySQL failure is fatal — SQLite on an ephemeral filesystem
+    // would silently wipe all data on every redeploy. Fail loud and fast instead.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[DATABASE] FATAL: MySQL connection failed in production environment.');
+      console.error(`[DATABASE] Error: ${err.message}`);
+      console.error('[DATABASE] Refusing SQLite fallback in production. Check DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME environment variables on Render.');
+      process.exit(1);
+    }
+
+    // Local development / test — fall back to embedded SQLite for zero-config convenience
     console.warn(`[DATABASE] MySQL server connection not available (${err.message}). Using local embedded SQL engine.`);
-    
-    // Fallback to SQLite
+
     const Database = require('better-sqlite3');
     const dbPath = path.join(__dirname, '..', 'database', 'medifind.sqlite');
     sqliteDb = new Database(dbPath);
