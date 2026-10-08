@@ -1,0 +1,8 @@
+{
+    "mcpServers": {
+        "medifind-server": {
+            "command": "node",
+            "args": ["./path/to/your/server.js"]
+        }
+    }
+}

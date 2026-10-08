@@ -4,8 +4,6 @@
 -- MySQL Workbench Compatible Schema
 -- ==========================================================
 
-CREATE DATABASE IF NOT EXISTS `medifind_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `medifind_db`;
 
 -- 1. USERS TABLE
 CREATE TABLE IF NOT EXISTS `users` (

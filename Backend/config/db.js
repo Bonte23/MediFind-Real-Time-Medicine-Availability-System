@@ -28,7 +28,16 @@ async function initializeDatabase() {
     });
 
     const dbName = process.env.DB_NAME || 'medifind_db';
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+    try {
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+    } catch (createErr) {
+      // Ignore privilege errors since Render's MySQL image creates the DB automatically.
+      if (createErr.code === 'ER_DBACCESS_DENIED_ERROR' || createErr.code === 'ER_ACCESS_DENIED_ERROR') {
+        console.warn(`[DATABASE] Skipping CREATE DATABASE: User lacks privileges, assuming database already exists.`);
+      } else {
+        throw createErr;
+      }
+    }
     await connection.end();
 
     // Create Pool
@@ -184,6 +193,10 @@ async function bootstrapDatabase() {
       }
     } catch (e) {
       console.error('[DATABASE] Error during MySQL bootstrap:', e.message);
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[DATABASE] FATAL: Schema or bootstrap failed. Halting application startup.');
+        process.exit(1);
+      }
     }
   } else if (dbType === 'sqlite' && sqliteDb) {
     try {
