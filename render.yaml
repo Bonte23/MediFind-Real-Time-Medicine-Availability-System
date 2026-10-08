@@ -1,69 +1,40 @@
-version: "1"
 
 services:
-  # MySQL Private Service
-  - type: pserv
-    name: medifind-mysql
-    region: singapore
-    plan: starter
-    runtime: image
-    image:
-      url: mysql/mysql-server:8.0
-    disk:
-      name: mysql-data
-      mountPath: /var/lib/mysql
-      sizeGB: 10
-    envVars:
-      - key: MYSQL_DATABASE
-        value: medifind_db
-      - key: MYSQL_USER
-        value: medifind_user
-      - key: MYSQL_PASSWORD
-        generateValue: true
-      - key: MYSQL_ROOT_PASSWORD
-        generateValue: true
-
-  # MediFind Node.js Web Service
   - type: web
     name: medifind-backend
-    region: singapore
-    plan: starter
     runtime: node
+    plan: free
+    region: singapore
     rootDir: Backend
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
+
     envVars:
-      # Application Environment
       - key: NODE_ENV
         value: production
-      
-      # Database Connections
+
+      # External MySQL database
       - key: DB_HOST
-        fromService:
-          type: pserv
-          name: medifind-mysql
-          property: host
+        sync: false
       - key: DB_PORT
-        fromService:
-          type: pserv
-          name: medifind-mysql
-          property: port
+        value: "3306"
       - key: DB_USER
-        value: medifind_user
+        sync: false
       - key: DB_PASSWORD
-        fromService:
-          type: pserv
-          name: medifind-mysql
-          envVarKey: MYSQL_PASSWORD
+        sync: false
       - key: DB_NAME
         value: medifind_db
 
-      # Secrets and Configs
+      # Application secrets
       - key: JWT_SECRET
         sync: false
+
+      # Frontend
       - key: FRONTEND_URL
         sync: false
+
+      # Initial administrator
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
