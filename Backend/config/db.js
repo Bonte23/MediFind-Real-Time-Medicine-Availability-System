@@ -21,10 +21,11 @@ async function initializeDatabase() {
     // Attempt connecting to MySQL Server
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST || '127.0.0.1',
-      port: process.env.DB_PORT || 3306,
+      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
-      multipleStatements: true
+      multipleStatements: true,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
     });
 
     const dbName = process.env.DB_NAME || 'medifind_db';
@@ -43,14 +44,15 @@ async function initializeDatabase() {
     // Create Pool
     pool = mysql.createPool({
       host: process.env.DB_HOST || '127.0.0.1',
-      port: process.env.DB_PORT || 3306,
+      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: dbName,
       waitForConnections: true,
       connectionLimit: 15,
       queueLimit: 0,
-      multipleStatements: true
+      multipleStatements: true,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
     });
 
     // Test connection
