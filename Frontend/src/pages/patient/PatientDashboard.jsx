@@ -22,6 +22,7 @@ const PatientDashboard = () => {
   const [activeReservations, setActiveReservations] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [featuredMedicines, setFeaturedMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +43,19 @@ const PatientDashboard = () => {
         if (notifRes.data.success) {
           setNotifications(notifRes.data.data ? notifRes.data.data.slice(0, 4) : []);
         }
+
+        try {
+          const medicinesRes = await api.get('/medicines?in_stock_only=true');
+
+          if (medicinesRes.data.success) {
+            setFeaturedMedicines(
+              medicinesRes.data.data ? medicinesRes.data.data.slice(0, 4) : []
+            );
+          }
+        } catch (medicineError) {
+          console.error('Featured medicines load error:', medicineError);
+        }
+
       } catch (e) {
         console.error('Patient dashboard load error:', e);
       } finally {
@@ -55,7 +69,7 @@ const PatientDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        
+
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-sky-700 via-sky-600 to-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-sky-900/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
@@ -123,7 +137,7 @@ const PatientDashboard = () => {
 
         {/* Main Grid: Active Reservations & Live Alerts */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* Active Reservations (col-span 7) */}
           <div className="lg:col-span-7 space-y-4">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
@@ -197,7 +211,7 @@ const PatientDashboard = () => {
 
           {/* Right Column: Notifications & Prescription Summary (col-span 5) */}
           <div className="lg:col-span-5 space-y-6">
-            
+
             {/* Live Notifications Feed */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
@@ -252,7 +266,69 @@ const PatientDashboard = () => {
 
         </div>
 
-      </div>
+
+
+        {/* Explore Available Medicines */}
+        <div className="mt-6 bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <Pill className="w-4 h-4 text-sky-600" />
+                Explore Available Medicines
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Discover medicines currently available at registered pharmacies.
+              </p>
+            </div>
+            <Link
+              to="/search"
+              className="text-xs font-bold text-sky-600 hover:underline whitespace-nowrap"
+            >
+              View All
+            </Link>
+          </div>
+
+          {featuredMedicines.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-400">
+              No in-stock medicines are currently available.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4">
+              {featuredMedicines.map((med) => (
+                <div
+                  key={med.medicine_id}
+                  className="p-4 rounded-2xl border border-slate-100 bg-slate-50 hover:border-sky-300 transition-colors"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-sky-700 bg-sky-100 px-2 py-1 rounded-md">
+                    {med.category}
+                  </span>
+
+                  <h4 className="font-extrabold text-sm text-slate-900 mt-3">
+                    {med.medicine_name}
+                  </h4>
+
+                  <p className="text-xs text-slate-500 mt-1">
+                    {med.generic_name || med.manufacturer || 'Medicine'}
+                  </p>
+
+                  <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                    <p className="text-xs font-semibold text-emerald-700">
+                      Available at {med.pharmacies_with_stock} pharmacies
+                    </p>
+
+                    {Number(med.min_price) > 0 && (
+                      <p className="text-sm font-black text-slate-800">
+                        From KSh {Number(med.min_price).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        </div>
     </div>
   );
 };
