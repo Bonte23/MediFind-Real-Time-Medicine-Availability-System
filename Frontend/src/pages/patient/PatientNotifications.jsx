@@ -11,7 +11,7 @@ const PatientNotifications = () => {
     <div className="min-h-screen bg-slate-50 py-6 sm:py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Notifications & Alerts
@@ -22,11 +22,11 @@ const PatientNotifications = () => {
           </div>
 
           <button
-            onClick={markAllAsRead}
-            className="px-4 py-2 bg-white border border-slate-200 text-sky-600 hover:bg-sky-50 text-xs font-bold rounded-xl shadow-2xs"
-          >
-            Mark All Read
-          </button>
+  onClick={markAllAsRead}
+  className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-white border border-slate-200 text-sky-600 hover:bg-sky-50 text-xs font-bold rounded-xl shadow-2xs"
+>
+  Mark All Read
+</button>
         </div>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
@@ -43,7 +43,7 @@ const PatientNotifications = () => {
                     markAsRead(n.notification_id);
                     if (n.link) navigate(n.link);
                   }}
-                  className={`p-5 hover:bg-slate-50 cursor-pointer transition-colors flex items-start gap-4 ${
+                  className={`p-4 sm:p-5 hover:bg-slate-50 cursor-pointer transition-colors flex items-start gap-3 sm:gap-4 ${
                     !n.is_read ? 'bg-sky-50/60' : ''
                   }`}
                 >
@@ -58,16 +58,18 @@ const PatientNotifications = () => {
                   </div>
 
                   <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-sm text-slate-900">{n.title}</h3>
-                      <span className="text-[11px] text-slate-400">
-                        {new Date(n.created_at).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
-                  </div>
-                </div>
-              ))}
+  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-4">
+    <h3 className="font-extrabold text-sm text-slate-900 break-words">
+      {n.title}
+    </h3>
+    <span className="text-[10px] sm:text-[11px] text-slate-400">
+      {new Date(n.created_at).toLocaleString()}
+    </span>
+  </div>
+  <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
+</div>
+</div>
+))}
             </div>
           )}
         </div>
