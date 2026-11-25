@@ -256,7 +256,7 @@ const AddMedicineModal = ({ isOpen, onClose, onAdded }) => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Unit Retail Price ($) *
+                Unit Retail Price (KSh) *
                 </label>
                 <input
                   type="number"

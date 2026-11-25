@@ -100,7 +100,7 @@ const ManageInventory = () => {
                     <td className="p-3 border border-gray-200"><input type="checkbox" /></td>
                     <td className="p-3 border border-gray-200">{med.name}</td>
                     <td className="p-3 border border-gray-200">{med.expiry}</td>
-                    <td className="p-3 border border-gray-200">${med.price.toFixed(2)}</td>
+                    <td className="p-3 border border-gray-200">KSh {med.price.toFixed(2)}</td>
                     <td className="p-3 border border-gray-200">{med.quantity}</td>
                     <td className="p-3 border border-gray-200 flex space-x-2">
                         <button onClick={() => handleUpdate(med)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Update</button>

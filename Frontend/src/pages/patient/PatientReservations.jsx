@@ -206,7 +206,7 @@ const PatientReservations = () => {
                     <div className="flex justify-between">
                       <span className="text-slate-500">Total Price:</span>
                       <span className="font-extrabold text-emerald-600 text-sm">
-                        ${parseFloat(res.total_price).toFixed(2)}
+                      KSh {parseFloat(res.total_price).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t border-slate-200/60 pt-1.5 text-[11px]">

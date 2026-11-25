@@ -156,7 +156,7 @@ const PharmacyReservations = () => {
 
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-slate-800 block">{res.quantity} Units</span>
-                        <span className="font-extrabold text-emerald-600">${parseFloat(res.total_price).toFixed(2)}</span>
+                        <span className="font-extrabold text-emerald-600">KSh {parseFloat(res.total_price).toFixed(2)}</span>
                       </td>
 
                       <td className="py-3.5 px-4">

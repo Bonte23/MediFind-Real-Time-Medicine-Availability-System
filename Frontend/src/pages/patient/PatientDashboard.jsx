@@ -178,7 +178,7 @@ const PatientDashboard = () => {
                         <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-3">
                           <span>🏢 {res.pharmacy_name}</span>
                           <span>📦 Qty: {res.quantity} Units</span>
-                          <span className="font-bold text-emerald-600">${parseFloat(res.total_price).toFixed(2)}</span>
+                          <span className="font-bold text-emerald-600">KSh {parseFloat(res.total_price).toFixed(2)}</span>
                         </div>
                       </div>
 

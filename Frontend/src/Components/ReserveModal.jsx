@@ -182,7 +182,7 @@ const ReserveModal = ({ isOpen, onClose, medicine, pharmacy, inventoryItem, onRe
                   </div>
                   <div>
                     <span className="text-slate-400 block">Total Price:</span>
-                    <span className="font-extrabold text-emerald-600 text-sm">${parseFloat(successData.total_price).toFixed(2)}</span>
+                    <span className="font-extrabold text-emerald-600 text-sm">KSh {parseFloat(successData.total_price).toFixed(2)}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Hold Validity:</span>
@@ -234,7 +234,7 @@ const ReserveModal = ({ isOpen, onClose, medicine, pharmacy, inventoryItem, onRe
                 </div>
                 <div className="text-right">
                   <span className="text-slate-500 block">Unit Price:</span>
-                  <span className="text-base font-extrabold text-sky-600">${unitPrice.toFixed(2)}</span>
+                  <span className="text-base font-extrabold text-sky-600">KSh {unitPrice.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -321,7 +321,7 @@ const ReserveModal = ({ isOpen, onClose, medicine, pharmacy, inventoryItem, onRe
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <div>
                   <span className="text-[11px] text-slate-400 block">Total Est. Cost</span>
-                  <span className="text-xl font-extrabold text-slate-900">${totalPrice.toFixed(2)}</span>
+                  <span className="text-xl font-extrabold text-slate-900">KSh {totalPrice.toFixed(2)}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
