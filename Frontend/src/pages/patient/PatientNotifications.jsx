@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, CalendarCheck, Pill, CheckCircle2, Trash2 } from 'lucide-react';
-import { useNotifications } from '../../context/NotificationContext';
+import { useNotifications } from '../../context/useNotifications';
 import { useNavigate } from 'react-router-dom';
 
 const PatientNotifications = () => {

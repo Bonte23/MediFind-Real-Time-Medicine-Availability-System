@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useNotifications } from '../context/NotificationContext';
+import { useAuth } from '../context/useAuth';
+import { useNotifications } from '../context/useNotifications';
 import {
   Pill,
   MapPin,

@@ -19,7 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import MapComponent from '../Components/MapComponent';
 import ReserveModal from '../Components/ReserveModal';
 

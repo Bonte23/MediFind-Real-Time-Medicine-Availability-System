@@ -1,15 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { AuthContext } from './AuthContextDefinition';
 import api from '../services/api';
 
-const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState({
-    latitude: 40.7128, // Default coordinates fallback
-    longitude: -74.0060,
+    latitude: null,
+    longitude: null,
     hasLocation: false,
     loadingLocation: false,
     error: null
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
       try {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
-      } catch (e) {
+      } catch {
         localStorage.removeItem('medifind_token');
         localStorage.removeItem('medifind_user');
       }
@@ -36,32 +36,58 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const requestUserLocation = () => {
-    if ('geolocation' in navigator) {
-      setUserLocation(prev => ({ ...prev, loadingLocation: true }));
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            hasLocation: true,
-            loadingLocation: false,
-            error: null
-          });
-        },
-        (error) => {
-          // Default fallback coordinates (NYC Midtown)
-          setUserLocation(prev => ({
-            ...prev,
-            latitude: 40.7128,
-            longitude: -74.0060,
-            hasLocation: true,
-            loadingLocation: false,
-            error: 'Location access denied. Using standard metropolitan coordinates.'
-          }));
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-      );
+    if (!('geolocation' in navigator)) {
+      setUserLocation({
+        latitude: null,
+        longitude: null,
+        hasLocation: false,
+        loadingLocation: false,
+        error: 'Geolocation is not supported by this browser.'
+      });
+      return;
     }
+  
+    setUserLocation(prev => ({
+      ...prev,
+      loadingLocation: true,
+      error: null
+    }));
+  
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          hasLocation: true,
+          loadingLocation: false,
+          error: null
+        });
+      },
+      (error) => {
+        let errorMessage =
+          'Unable to determine your location. You can still search for pharmacies.';
+  
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage =
+            'Location access denied. You can still search for pharmacies.';
+        } else if (error.code === error.TIMEOUT) {
+          errorMessage = 'Location request timed out. Please try again.';
+        }
+  
+        setUserLocation({
+          latitude: null,
+          longitude: null,
+          hasLocation: false,
+          loadingLocation: false,
+          error: errorMessage
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
   };
 
   const login = async (email, password) => {
@@ -155,10 +181,3 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};

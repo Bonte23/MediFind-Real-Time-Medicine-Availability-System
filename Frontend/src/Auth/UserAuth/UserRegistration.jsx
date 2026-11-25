@@ -10,7 +10,7 @@ const UserRegistration = () => {
     gender: '',
     password: ''
   });
-  const [users, setUsers] = useState([]);
+  
   const [errors, setErrors] = useState('');
   const navigate = useNavigate();
   const handleChange = (e) =>{

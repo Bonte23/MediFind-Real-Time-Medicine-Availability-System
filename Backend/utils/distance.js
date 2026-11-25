@@ -22,7 +22,16 @@ function calculateDistance(lat1, lon1, lat2, lon2, unit = 'km') {
   const p2 = Number(lat2);
   const l2 = Number(lon2);
 
-  if (isNaN(p1) || isNaN(l1) || isNaN(p2) || isNaN(l2)) {
+   if (
+    !Number.isFinite(p1) ||
+    !Number.isFinite(l1) ||
+    !Number.isFinite(p2) ||
+    !Number.isFinite(l2) ||
+    p1 < -90 || p1 > 90 ||
+    p2 < -90 || p2 > 90 ||
+    l1 < -180 || l1 > 180 ||
+    l2 < -180 || l2 > 180
+  ) {
     return null;
   }
 
@@ -55,12 +64,19 @@ function calculateDistance(lat1, lon1, lat2, lon2, unit = 'km') {
  * @returns {Array} sorted array with distance_km attached
  */
 function sortByDistance(items, userLat, userLng) {
-  if (!userLat || !userLng) return items;
+  if (
+  userLat === undefined ||
+  userLat === null ||
+  userLng === undefined ||
+  userLng === null
+) {
+  return items;
+}
 
   return items
     .map(item => {
-      const lat = item.latitude || (item.pharmacy && item.pharmacy.latitude);
-      const lng = item.longitude || (item.pharmacy && item.pharmacy.longitude);
+      const lat = item.latitude ?? (item.pharmacy && item.pharmacy.latitude);
+const lng = item.longitude ?? (item.pharmacy && item.pharmacy.longitude);
       const dist = calculateDistance(userLat, userLng, lat, lng, 'km');
       return {
         ...item,

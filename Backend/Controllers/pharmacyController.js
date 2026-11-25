@@ -17,8 +17,62 @@ exports.getPharmacies = async (req, res, next) => {
       radius_km = ''
     } = req.query;
 
+         // Validate user coordinates when provided
+    const hasUserLat = user_lat !== undefined && user_lat !== '';
+    const hasUserLng = user_lng !== undefined && user_lng !== '';
+
+    if (hasUserLat !== hasUserLng) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both user latitude and longitude must be provided.'
+      });
+    }
+
+    let validUserLat = null;
+    let validUserLng = null;
+
+    if (hasUserLat && hasUserLng) {
+      validUserLat = Number(user_lat);
+      validUserLng = Number(user_lng);
+
+      if (
+        !Number.isFinite(validUserLat) ||
+        !Number.isFinite(validUserLng) ||
+        validUserLat < -90 ||
+        validUserLat > 90 ||
+        validUserLng < -180 ||
+        validUserLng > 180
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user coordinates.'
+        });
+      }
+    }
+
+    // Validate search radius when provided
+    let maxRadius = null;
+
+    if (radius_km !== '') {
+      maxRadius = Number(radius_km);
+
+      if (!Number.isFinite(maxRadius) || maxRadius <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Search radius must be a positive number.'
+        });
+      }
+
+      if (!hasUserLat || !hasUserLng) {
+        return res.status(400).json({
+          success: false,
+          message: 'User coordinates are required when searching by radius.'
+        });
+      }
+    }
+
     let sql = `
-      SELECT 
+      SELECT
         p.pharmacy_id,
         p.user_id,
         p.pharmacy_name,
@@ -68,22 +122,32 @@ exports.getPharmacies = async (req, res, next) => {
     const pharmacies = await db.query(sql, params);
 
     let formatted = pharmacies.map(p => {
-      const dist = calculateDistance(user_lat, user_lng, p.latitude, p.longitude, 'km');
+      const dist = hasUserLat && hasUserLng
+        ? calculateDistance(
+            validUserLat,
+            validUserLng,
+            p.latitude,
+            p.longitude,
+            'km'
+          )
+        : null;
+
       return {
         ...p,
         is_24_hours: Boolean(p.is_24_hours),
-        distance_km: dist !== null ? dist : null
+        distance_km: dist
       };
     });
 
     // Apply radius filter if provided
-    if (radius_km && user_lat && user_lng) {
-      const maxRadius = parseFloat(radius_km);
-      formatted = formatted.filter(p => p.distance_km !== null && p.distance_km <= maxRadius);
+    if (maxRadius !== null) {
+      formatted = formatted.filter(
+        p => p.distance_km !== null && p.distance_km <= maxRadius
+      );
     }
 
-    // Sort by distance if user coords provided
-    if (user_lat && user_lng) {
+    // Sort by distance if valid user coordinates are provided
+    if (hasUserLat && hasUserLng) {
       formatted.sort((a, b) => {
         if (a.distance_km === null) return 1;
         if (b.distance_km === null) return -1;
@@ -123,7 +187,7 @@ exports.getPharmacyById = async (req, res, next) => {
 
     // Fetch inventory for this pharmacy
     let invSql = `
-      SELECT 
+      SELECT
         i.inventory_id,
         i.quantity,
         i.reserved_quantity,

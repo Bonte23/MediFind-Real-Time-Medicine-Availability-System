@@ -22,7 +22,10 @@ exports.register = async (req, res, next) => {
       pharmacy_name,
       license_number,
       pharmacy_address,
+      pharmacy_county,
       pharmacy_city,
+      pharmacy_latitude,
+      pharmacy_longitude,
       pharmacy_phone,
       pharmacy_email,
       opening_hours,
@@ -75,6 +78,30 @@ exports.register = async (req, res, next) => {
         });
       }
 
+      const pharmacyLat = Number(pharmacy_latitude);
+      const pharmacyLng = Number(pharmacy_longitude);
+
+      if (
+        !pharmacy_county ||
+        typeof pharmacy_city !== 'string' ||
+        !pharmacy_city.trim() ||
+        pharmacy_latitude == null ||
+        pharmacy_latitude === '' ||
+        pharmacy_longitude == null ||
+        pharmacy_longitude === '' ||
+        !Number.isFinite(pharmacyLat) ||
+        !Number.isFinite(pharmacyLng) ||
+        pharmacyLat < -90 ||
+        pharmacyLat > 90 ||
+        pharmacyLng < -180 ||
+        pharmacyLng > 180
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide the pharmacy county, town, and a valid location selected on the map.'
+        });
+      }
+
       const existingLicense = await db.queryOne('SELECT pharmacy_id FROM pharmacies WHERE license_number = ?', [license_number.trim()]);
       if (existingLicense) {
         return res.status(409).json({
@@ -102,8 +129,8 @@ exports.register = async (req, res, next) => {
         role,
         userStatus,
         address || pharmacy_address || null,
-        latitude ? parseFloat(latitude) : (role === 'pharmacist' ? 40.7128 : null),
-        longitude ? parseFloat(longitude) : (role === 'pharmacist' ? -74.0060 : null)
+        latitude != null && latitude !== '' ? parseFloat(latitude) : null,
+        longitude != null && longitude !== '' ? parseFloat(longitude) : null
       ]
     );
 
@@ -111,18 +138,23 @@ exports.register = async (req, res, next) => {
     let pharmacyId = null;
 
     if (role === 'pharmacist') {
+      const pharmacyLat = Number(pharmacy_latitude);
+      const pharmacyLng = Number(pharmacy_longitude);
+
       const pharmResult = await db.execute(
-        `INSERT INTO pharmacies 
-         (user_id, pharmacy_name, license_number, address, city, latitude, longitude, phone, email, opening_hours, is_24_hours, approval_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+
+       `INSERT INTO pharmacies
+ (user_id, pharmacy_name, license_number, address, county, city, latitude, longitude, phone, email, opening_hours, is_24_hours, approval_status)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
         [
           userId,
           pharmacy_name.trim(),
           license_number.trim(),
           pharmacy_address.trim(),
-          pharmacy_city || 'New York',
-          latitude ? parseFloat(latitude) : 0,
-          longitude ? parseFloat(longitude) : 0,
+          pharmacy_county,
+          pharmacy_city.trim(),
+          pharmacyLat,
+          pharmacyLng,
           pharmacy_phone || phone,
           pharmacy_email || email,
           opening_hours || '08:00 AM - 10:00 PM',
@@ -232,7 +264,7 @@ exports.login = async (req, res, next) => {
     let pharmacy = null;
     if (user.role === 'pharmacist') {
       pharmacy = await db.queryOne('SELECT * FROM pharmacies WHERE user_id = ?', [user.user_id]);
-      
+
       if (pharmacy && pharmacy.approval_status === 'pending') {
         return res.status(403).json({
           success: false,
@@ -328,7 +360,7 @@ exports.updateProfile = async (req, res, next) => {
     const { full_name, phone, address, latitude, longitude } = req.body;
 
     await db.execute(
-      `UPDATE users 
+      `UPDATE users
        SET full_name = COALESCE(?, full_name),
            phone = COALESCE(?, phone),
            address = COALESCE(?, address),

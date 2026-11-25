@@ -14,26 +14,32 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+import PharmacyLocationPicker from '../Components/PharmacyLocationPicker';
 
 const Register = () => {
   const [roleTab, setRoleTab] = useState('patient'); // 'patient' or 'pharmacist'
 
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirm_password: '',
-    address: '',
-    // Pharmacist specific
-    pharmacy_name: '',
-    license_number: '',
-    pharmacy_address: '',
-    pharmacy_city: 'New York',
-    opening_hours: '08:00 AM - 10:00 PM',
-    is_24_hours: false
-  });
+  
+      full_name: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirm_password: '',
+      address: '',
+    
+      // Pharmacy specific fields
+      pharmacy_name: '',
+      license_number: '',
+      pharmacy_address: '',
+      pharmacy_county: '',
+      pharmacy_city: '',
+      pharmacy_latitude: null,
+      pharmacy_longitude: null,
+      opening_hours: '08:00 AM - 10:00 PM',
+      is_24_hours: false
+    });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,6 +55,16 @@ const Register = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+  
+    
+  const handlePharmacyLocationSelect = (latitude, longitude) => {
+    setFormData(prev => ({
+      ...prev,
+      pharmacy_latitude: latitude,
+      pharmacy_longitude: longitude
+    }));
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +81,34 @@ const Register = () => {
       return;
     }
 
+    // Validate pharmacy details for pharmacist registration
+    if (roleTab === 'pharmacist') {
+      if (
+        !formData.pharmacy_county ||
+        !formData.pharmacy_city.trim()
+      ) {
+        setError('Please select a county and enter your pharmacy town.');
+        return;
+      }
+
+      const lat = Number(formData.pharmacy_latitude);
+      const lng = Number(formData.pharmacy_longitude);
+
+      if (
+        formData.pharmacy_latitude === null ||
+        formData.pharmacy_longitude === null ||
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng) ||
+        lat < -90 || lat > 90 ||
+        lng < -180 || lng > 180
+      ) {
+        setError('Please select your actual pharmacy location on the map.');
+        return;
+      }
+    }
+
     try {
+
       setLoading(true);
       const payload = {
         ...formData,
@@ -298,6 +341,100 @@ const Register = () => {
                       required={roleTab === 'pharmacist'}
                     />
                   </div>
+                 
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                         County
+                       </label>
+                       <select
+                          name="pharmacy_county"
+                          value={formData.pharmacy_county}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                          required={roleTab === 'pharmacist'}
+                       >
+                         <option value="">Select County</option>
+                         {[
+                           'Baringo',
+                           'Bomet',
+                           'Bungoma',
+                           'Busia',
+                           'Elgeyo-Marakwet',
+                           'Embu',
+                           'Garissa',
+                           'Homa Bay',
+                           'Isiolo',
+                           'Kajiado',
+                           'Kakamega',
+                           'Kericho',
+                           'Kiambu',
+                           'Kilifi',
+                           'Kirinyaga',
+                           'Kisii',
+                           'Kisumu',
+                           'Kitui',
+                           'Kwale',
+                           'Laikipia',
+                           'Lamu',
+                           'Machakos',
+                           'Makueni',
+                           'Mandera',
+                           'Marsabit',
+                           'Meru',
+                           'Migori',
+                           'Mombasa',
+                           "Murang'a",
+                           'Nairobi',
+                           'Nakuru',
+                           'Nandi',
+                           'Narok',
+                           'Nyamira',
+                           'Nyandarua',
+                           'Nyeri',
+                           'Samburu',
+                           'Siaya',
+                           'Taita-Taveta',
+                           'Tana River',
+                           'Tharaka-Nithi',
+                           'Trans Nzoia',
+                           'Turkana',
+                           'Uasin Gishu',
+                           'Vihiga',
+                           'Wajir',
+                           'West Pokot'
+                        ].map((county) => (
+                          <option key={county} value={county}>
+                             {county}
+                           </option>
+                        ))}
+                     </select>
+                    </div>
+
+                     <div>
+                       <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Town
+                        </label>
+                         <input
+                           type="text"
+                           name="pharmacy_city"
+                           value={formData.pharmacy_city}
+                           onChange={handleChange}
+                           placeholder="e.g. Westlands, Nairobi"
+                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                           required={roleTab === 'pharmacist'}
+                       />
+                     </div>
+                    </div>
+
+                  
+                    <PharmacyLocationPicker
+                    latitude={formData.pharmacy_latitude}
+                    longitude={formData.pharmacy_longitude}
+                    onLocationSelect={handlePharmacyLocationSelect}
+                  />
+
 
                   <label className="flex items-center gap-2 pt-1 cursor-pointer">
                     <input

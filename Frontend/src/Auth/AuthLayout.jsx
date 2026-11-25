@@ -1,10 +1,10 @@
 import React from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import logo from '../assets/Logo.png'
 
 const AuthLayout = () => {
 
-    const navigate = useNavigate();
+    
 
     return (
         <div className='flex flex-col items-center'>

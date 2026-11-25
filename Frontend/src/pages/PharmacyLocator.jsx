@@ -13,7 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import MapComponent from '../Components/MapComponent';
 
 const PharmacyLocator = () => {
@@ -36,12 +36,23 @@ const PharmacyLocator = () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (is24HoursOnly) params.append('is_24_hours', 'true');
-      if (radiusKm) params.append('radius_km', radiusKm);
-      if (userLocation.latitude && userLocation.longitude) {
-        params.append('user_lat', userLocation.latitude);
-        params.append('user_lng', userLocation.longitude);
-      }
-
+      const hasValidLocation =
+      userLocation.latitude !== null &&
+      userLocation.latitude !== undefined &&
+      userLocation.longitude !== null &&
+      userLocation.longitude !== undefined &&
+      Number.isFinite(Number(userLocation.latitude)) &&
+      Number.isFinite(Number(userLocation.longitude)) &&
+      Number(userLocation.latitude) >= -90 &&
+      Number(userLocation.latitude) <= 90 &&
+      Number(userLocation.longitude) >= -180 &&
+      Number(userLocation.longitude) <= 180;
+    
+    if (hasValidLocation) {
+      params.append('user_lat', userLocation.latitude);
+      params.append('user_lng', userLocation.longitude);
+      params.append('radius_km', radiusKm);
+    }
       const res = await api.get(`/pharmacies?${params.toString()}`);
       if (res.data.success) {
         setPharmacies(res.data.data);

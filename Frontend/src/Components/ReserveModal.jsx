@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import {
   X,
   Pill,
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 const ReserveModal = ({ isOpen, onClose, medicine, pharmacy, inventoryItem, onReservationSuccess }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [quantity, setQuantity] = useState(1);

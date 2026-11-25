@@ -15,6 +15,20 @@ let dbType = 'mysql';
  * Initialize Database Connection
  */
 async function initializeDatabase() {
+  // Automated tests use an isolated in-memory SQLite database.
+  if (process.env.NODE_ENV === 'test') {
+    const Database = require('better-sqlite3');
+
+    sqliteDb = new Database(':memory:');
+    sqliteDb.pragma('foreign_keys = ON');
+    dbType = 'sqlite';
+
+    console.log('[DATABASE] Connected to isolated in-memory test database.');
+
+    await bootstrapDatabase();
+    return;
+  }
+
   const mysql = require('mysql2/promise');
 
   try {
@@ -25,6 +39,7 @@ async function initializeDatabase() {
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       multipleStatements: true,
+      connectTimeout: 10000,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
     });
 
@@ -41,7 +56,7 @@ async function initializeDatabase() {
     }
     await connection.end();
 
-    // Create Pool
+    // Create Pool with TCP Keep-Alive and error handling
     pool = mysql.createPool({
       host: process.env.DB_HOST || '127.0.0.1',
       port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
@@ -51,8 +66,18 @@ async function initializeDatabase() {
       waitForConnections: true,
       connectionLimit: 15,
       queueLimit: 0,
+      connectTimeout: 10000,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 10000,
       multipleStatements: true,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+    });
+
+    // Handle connection-level errors safely so idle drops do not bubble up as unhandled exceptions
+    pool.on('connection', (connection) => {
+      connection.on('error', (connErr) => {
+        console.error('[DATABASE] Pooled connection warning:', connErr.code || connErr.message);
+      });
     });
 
     // Test connection
@@ -169,6 +194,18 @@ async function bootstrapDatabase() {
         await pool.query(schemaSql);
       }
 
+                  // Add county column to existing pharmacy tables if missing
+      const [countyColumn] = await pool.query(
+        "SHOW COLUMNS FROM pharmacies LIKE 'county'"
+      );
+
+      if (countyColumn.length === 0) {
+        await pool.query(
+          "ALTER TABLE pharmacies ADD COLUMN county VARCHAR(100) NULL AFTER address"
+        );
+        console.log('[DATABASE] Added pharmacies.county column.');
+      }
+
       // Check if admin user exists; if not, initialize
       const [admins] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
       if (admins[0].count === 0) {
@@ -224,7 +261,8 @@ async function bootstrapDatabase() {
           pharmacy_name TEXT NOT NULL,
           license_number TEXT NOT NULL UNIQUE,
           address TEXT NOT NULL,
-          city TEXT NOT NULL DEFAULT 'New York',
+          county TEXT,
+          city TEXT NOT NULL,
           latitude REAL NOT NULL,
           longitude REAL NOT NULL,
           phone TEXT NOT NULL,
@@ -342,6 +380,18 @@ async function bootstrapDatabase() {
         );
       `);
 
+        // Add county column to existing pharmacy tables if missing
+      const pharmacyColumns = sqliteDb.prepare(
+      "PRAGMA table_info(pharmacies)"
+      ).all();
+
+      if (!pharmacyColumns.some(column => column.name === 'county')) {
+          sqliteDb.exec(
+            "ALTER TABLE pharmacies ADD COLUMN county TEXT"
+         );
+          console.log('[DATABASE] Added pharmacies.county column.');
+        }
+
       // Initialize administrator account if not present
       const adminCount = sqliteDb.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get();
       if (adminCount.count === 0) {
@@ -394,8 +444,42 @@ function getMasterMedicines() {
   ];
 }
 
+/**
+ * Deep health check verifying active database connectivity
+ * Returns { healthy: boolean, dbType: string, latencyMs?: number, error?: string }
+ */
+async function checkHealth() {
+  const startTime = Date.now();
+  if (dbType === 'mysql') {
+    if (!pool) {
+      return { healthy: false, dbType: 'mysql', error: 'Database pool is not initialized' };
+    }
+    try {
+      const [rows] = await pool.query('SELECT 1 as alive');
+      const latencyMs = Date.now() - startTime;
+      const healthy = Array.isArray(rows) && rows.length > 0 && rows[0].alive === 1;
+      return { healthy, dbType: 'mysql', latencyMs };
+    } catch (err) {
+      return { healthy: false, dbType: 'mysql', error: err.code || err.message };
+    }
+  } else if (dbType === 'sqlite') {
+    if (!sqliteDb || !sqliteDb.open) {
+      return { healthy: false, dbType: 'sqlite', error: 'SQLite database is not open' };
+    }
+    try {
+      const row = sqliteDb.prepare('SELECT 1 as alive').get();
+      const latencyMs = Date.now() - startTime;
+      return { healthy: !!row && row.alive === 1, dbType: 'sqlite', latencyMs };
+    } catch (err) {
+      return { healthy: false, dbType: 'sqlite', error: err.message };
+    }
+  }
+  return { healthy: false, dbType: 'none', error: 'Database is not initialized' };
+}
+
 module.exports = {
   initializeDatabase,
+  checkHealth,
   query,
   queryOne,
   execute,

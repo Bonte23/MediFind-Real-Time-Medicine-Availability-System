@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, MapPin, Phone, Mail, Clock, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 const PharmacyProfile = () => {
   const { user, updateUser } = useAuth();

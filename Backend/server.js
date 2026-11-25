@@ -4,7 +4,7 @@ const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
-const { initializeDatabase } = require('./config/db');
+const { initializeDatabase, checkHealth, closeDatabase } = require('./config/db');
 const { errorHandler } = require('./middleware/errorHandler');
 
 // Route Imports
@@ -38,6 +38,7 @@ const allowedOrigins = (() => {
   return [
     'http://localhost:3000',
     'http://localhost:5173',
+    'http://localhost:5174',
     'http://localhost:4173',
     'http://localhost:8080'
   ];
@@ -68,13 +69,38 @@ if (process.env.NODE_ENV !== 'test') {
 // Serve uploaded prescription files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health Check API
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'online',
-    timestamp: new Date().toISOString(),
-    service: 'MediFind Medicine Availability & Pharmacy Locator System'
-  });
+// Health Check API — Deep check verifying active database availability
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = await checkHealth();
+    if (!health.healthy) {
+      return res.status(503).json({
+        status: 'degraded',
+        database: health.dbType,
+        healthy: false,
+        error: health.error || 'Database connectivity unavailable',
+        timestamp: new Date().toISOString(),
+        service: 'MediFind Medicine Availability & Pharmacy Locator System'
+      });
+    }
+
+    res.json({
+      status: 'online',
+      database: health.dbType,
+      healthy: true,
+      latencyMs: health.latencyMs,
+      timestamp: new Date().toISOString(),
+      service: 'MediFind Medicine Availability & Pharmacy Locator System'
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'error',
+      healthy: false,
+      error: err.message,
+      timestamp: new Date().toISOString(),
+      service: 'MediFind Medicine Availability & Pharmacy Locator System'
+    });
+  }
 });
 
 // API Routes
@@ -100,9 +126,7 @@ app.use('*', (req, res) => {
 // Centralized Error Handling
 app.use(errorHandler);
 
-// Graceful Shutdown — close SQLite before process exits to prevent native assertion crash
-const { closeDatabase } = require('./config/db');
-
+// Graceful Shutdown & Process Diagnostics
 function gracefulShutdown(signal) {
   console.log(`\n[SERVER] Received ${signal}. Shutting down gracefully...`);
   try {
@@ -115,6 +139,17 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('exit', () => {
   try { if (closeDatabase) closeDatabase(); } catch (_) {}
+});
+
+// Process exception diagnostics — logs root cause without leaking secrets, never silently continues
+process.on('unhandledRejection', (reason) => {
+  console.error('[PROCESS] Unhandled Promise Rejection:', reason instanceof Error ? (reason.stack || reason.message) : reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[PROCESS] FATAL Uncaught Exception:', err.stack || err.message);
+  try { if (closeDatabase) closeDatabase(); } catch (_) {}
+  process.exit(1);
 });
 
 // Start server
