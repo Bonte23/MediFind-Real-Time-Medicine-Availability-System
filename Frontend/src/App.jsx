@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 
 // Context Providers
@@ -48,19 +48,21 @@ import AdminComplaints from './pages/admin/AdminComplaints';
 import AdminReports from './pages/admin/AdminReports';
 import SystemLogs from './pages/admin/SystemLogs';
 
-function App() {
-  return (
-    <AuthProvider>
-      <NotificationProvider>
-        <Router>
-          <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900 selection:bg-sky-500 selection:text-white">
-            
-            {/* Global Navbar */}
-            <Navbar />
+function AppContent() {
+  const location = useLocation();
 
-            {/* Main Content Area */}
-            <main className="flex-1">
-              <Routes>
+  const hideFooter =
+    location.pathname.startsWith('/patient') ||
+    location.pathname.startsWith('/pharmacy') ||
+    location.pathname.startsWith('/admin');
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900 selection:bg-sky-500 selection:text-white">
+
+      <Navbar />
+
+      <main className="flex-1">
+      <Routes>
                 
                 {/* Public Routes */}
                 <Route path="/" element={<Home />} />
@@ -252,14 +254,23 @@ function App() {
               </Routes>
             </main>
 
-            {/* Global Footer */}
-            <Footer />
+          
 
-          </div>
-        </Router>
-      </NotificationProvider>
-    </AuthProvider>
-  );
+{!hideFooter && <Footer />}
+</div>
+);
+}
+
+function App() {
+return (
+<AuthProvider>
+<NotificationProvider>
+<Router>
+<AppContent />
+</Router>
+</NotificationProvider>
+</AuthProvider>
+);
 }
 
 export default App;
